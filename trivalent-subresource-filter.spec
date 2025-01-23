@@ -40,6 +40,10 @@ Source1: install_filter.sh
     rpm.define("_filterCount "..count-1)
 }
 
+
+# set clang_lib path
+Patch358: fedora_patches/chromium-127-rust-clanglib.patch
+
 # Dependencies required
 BuildRequires: gn
 BuildRequires: ninja-build
@@ -80,6 +84,7 @@ Filter used by %{chromium_name} to provide content blocking.
 
 %prep
 %setup -q -n chromium-%{version}
+%patch -P358 -p1 -b .rust-clang_lib
 
 %build
 
