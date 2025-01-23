@@ -101,6 +101,7 @@ export CXXFLAGS
 export LDFLAGS
 
 export RUSTC_BOOTSTRAP=1
+export RUST_BACKTRACE=1
 rustc_version="$(rustc --version)"
 rust_bindgen_root="%{_prefix}"
 
