@@ -73,6 +73,7 @@ BuildRequires: libatomic
 BuildRequires: rust-bindgen-devel
 BuildRequires: bindgen-cli
 BuildRequires: clang-devel
+BuildRequires: compiler-rt
 
 %description
 Filter used by %{chromium_name} to provide content blocking.
