@@ -101,13 +101,14 @@ export CXXFLAGS
 export LDFLAGS
 
 export RUSTC_BOOTSTRAP=1
-export RUST_BACKTRACE=1
+export RUST_BACKTRACE=full
 rustc_version="$(rustc --version)"
 rust_bindgen_root="%{_prefix}"
 
 # # set clang version
 clang_version="20"
 clang_base_path="$(pwd)/third_party/llvm-build/Release+Asserts/"
+export LIBCLANG_PATH="$(pwd)/third_party/llvm-build/Release+Asserts/"
 
 CHROMIUM_GN_DEFINES=""
 CHROMIUM_GN_DEFINES+=' custom_toolchain="//build/toolchain/linux/unbundle:default"'
