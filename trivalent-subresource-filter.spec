@@ -42,7 +42,7 @@ Source1: install_filter.sh
 
 
 # set clang_lib path
-Patch358: fedora_patches/chromium-127-rust-clanglib.patch
+Patch358: chromium-127-rust-clanglib.patch
 
 # Dependencies required
 BuildRequires: gn
