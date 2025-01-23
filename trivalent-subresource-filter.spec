@@ -105,8 +105,8 @@ rustc_version="$(rustc --version)"
 rust_bindgen_root="%{_prefix}"
 
 # set clang version
-clang_version="$(clang --version | sed -n 's/clang version //p' | cut -d. -f1)"
-clang_base_path="$(clang --version | grep InstalledDir | cut -d' ' -f2 | sed 's#/bin##')"
+clang_version="20"
+clang_base_path="$(pwd)/third_party/llvm-build/Release+Asserts/"
 
 CHROMIUM_GN_DEFINES=""
 CHROMIUM_GN_DEFINES+=' custom_toolchain="//build/toolchain/linux/unbundle:default"'
