@@ -114,6 +114,7 @@ CHROMIUM_GN_DEFINES=""
 # CHROMIUM_GN_DEFINES+=' host_toolchain="//build/toolchain/linux/unbundle:default"'
 # CHROMIUM_GN_DEFINES+=' system_libdir="%{_lib}"'
 CHROMIUM_GN_DEFINES+=' is_clang=true'
+CHROMIUM_GN_DEFINES+=' enable_rust=false'
 # CHROMIUM_GN_DEFINES+=" clang_base_path=\"$clang_base_path\""
 # CHROMIUM_GN_DEFINES+=" clang_version=\"$clang_version\""
 # CHROMIUM_GN_DEFINES+=' clang_use_chrome_plugins=false'
