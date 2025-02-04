@@ -47,6 +47,7 @@ Source1: install_filter.sh
 
 # set clang_lib path
 Patch358: chromium-127-rust-clanglib.patch
+Patch359: use-clang19-cflag.patch
 
 # Dependencies required
 BuildRequires: gn
@@ -89,7 +90,7 @@ Filter used by %{chromium_name} to provide content blocking.
 %prep
 %setup -q -n chromium-%{version}
 %patch -P358 -p1 -b .rust-clang_lib
-
+%patch -P359 -p1 -b .use-clang19-cflag
 %build
 
 FLAGS=' -Wno-deprecated-declarations -Wno-unknown-warning-option -Wno-unused-command-line-argument'
