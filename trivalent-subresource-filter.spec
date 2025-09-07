@@ -4,8 +4,16 @@
 
 Source69: chromium-version.txt
 
+# The system toolchain is more out-of-date compared to chromium's
+# It also loses out on some performance optimisations that chromium's toolchain can provide (like siso)
+# This is needed for non-x64 arches since the chromium toolchain doesn't support anything but x64
+%ifarch x86_64
+%global use_system_toolchain 0
+%else
+%global use_system_toolchain 1
+%endif
+
 Name:      %{chromium_name}-subresource-filter
-BuildArch: noarch
 Requires:  %{chromium_name}
 License:   Apache-2.0
 Summary:   Subresource filter for %{chromium_name}
@@ -40,7 +48,34 @@ Source1: install_filter.sh
     rpm.define("_filterCount "..count-1)
 }
 
-ExclusiveArch: x86_64
+
+%{lua:
+    rpm.execute("pwd")
+    if posix.getenv("HOME") == "/builddir" then
+        fpatches = rpm.glob('/builddir/build/SOURCES/fedora-*.patch')
+    else
+        fpatches = rpm.glob(macros['_sourcedir']..'/fedora-*.patch')
+    end
+
+    local count = 0
+    local printPatch = ""
+
+    if macros['use_system_toolchain'] == "1" then
+        count = 1000
+        printPatch = ""
+        for p in ipairs(fpatches) do
+            os.execute("echo 'Patching in "..fpatches[p].."'")
+            printPatch = "Patch"..count..": fedora-"..count..".patch"
+            rpm.execute("echo", printPatch)
+            print(printPatch.."\n")
+            count = count + 1
+        end
+        rpm.define("_fedoraPatchCount "..count-1)
+        os.execute("echo 'Autopatch F: "..macros['_fedoraPatchCount'].."'")
+    end
+}
+
+ExclusiveArch: x86_64 aarch64
 
 # Dependencies required
 BuildRequires: nss-devel >= 3.26
@@ -66,12 +101,31 @@ BuildRequires: libva-devel
 BuildRequires: libatomic
 # One of the python scripts invokes git to look for a hash. So helpful.
 BuildRequires: git-core
+%if %{use_system_toolchain}
+BuildRequires: clang
+BuildRequires: clang-tools-extra
+BuildRequires: compiler-rt
+BuildRequires: llvm
+BuildRequires: lld
+BuildRequires: rustc
+BuildRequires: bindgen-cli
+BuildRequires: ninja-build
+BuildRequires: gn
+%global build_target() \
+	export NINJA_STATUS="[%2:%f/%t] " ; \
+	ninja -j %{numjobs} -C '%1' '%2'
+%endif
 
 %description
 Filter used by %{chromium_name} to provide content blocking.
 
 %prep
 %setup -q -n chromium-%{version}
+
+%if %{use_system_toolchain}
+# License: MIT
+%autopatch -p1 -m 1000 -M %{_fedoraPatchCount}
+%endif
 
 %build
 FLAGS=' -Wno-deprecated-declarations -Wno-unknown-warning-option -Wno-unused-command-line-argument'
@@ -93,7 +147,33 @@ export LDFLAGS
 
 export RUSTC_BOOTSTRAP=1
 
+mkdir -p %{chromebuilddir}
+
+%if %{use_system_toolchain}
+declare -r clang_version="$(clang --version | sed -n 's/clang version //p' | cut -d. -f1)"
+declare -r clang_base_path="$(PATH=/usr/bin:/usr/sbin which clang | sed 's#/bin/.*##')"
+declare -r rust_bindgen_root="$(which bindgen | sed 's#/s\?bin/.*##')"
+%else
+declare -r SOURCE_DIR="$PWD/third_party"
+# add internal gn to PATH for build
+PATH="$PATH:$PWD/buildtools/linux64"
+export PATH
+%endif
+
 CHROMIUM_GN_DEFINES=""
+%ifarch aarch64
+CHROMIUM_GN_DEFINES+=' target_cpu="arm64"'
+%endif
+%if %{use_system_toolchain}
+CHROMIUM_GN_DEFINES+=" custom_toolchain=\"//build/toolchain/linux/unbundle:default\""
+CHROMIUM_GN_DEFINES+=" host_toolchain=\"//build/toolchain/linux/unbundle:default\""
+CHROMIUM_GN_DEFINES+=" clang_base_path=\"$clang_base_path\""
+CHROMIUM_GN_DEFINES+=" clang_version=$clang_version"
+CHROMIUM_GN_DEFINES+=" clang_use_chrome_plugins=false"
+CHROMIUM_GN_DEFINES+=" rust_sysroot_absolute=\"$(rustc --print sysroot)\""
+CHROMIUM_GN_DEFINES+=" rust_bindgen_root=\"$rust_bindgen_root\""
+CHROMIUM_GN_DEFINES+=" rustc_version=\"$(rustc --version)\""
+%endif
 CHROMIUM_GN_DEFINES+=' system_libdir="%{_lib}"'
 CHROMIUM_GN_DEFINES+=' is_clang=true'
 CHROMIUM_GN_DEFINES+=' use_sysroot=false'
@@ -102,8 +182,13 @@ export CHROMIUM_GN_DEFINES
 mkdir -p %{chromebuilddir}
 
 # Build the converter tool
-buildtools/linux64/gn --script-executable=%{__python3} gen --args="$CHROMIUM_GN_DEFINES" %{chromebuilddir}
-%{__python3} third_party/depot_tools/autoninja.py -C %{chromebuilddir} subresource_filter_tools
+gn --script-executable=%{chromium_pybin} gen --args="$CHROMIUM_GN_DEFINES" %{chromebuilddir}
+
+%if %{use_system_toolchain}
+%build_target %{chromebuilddir} subresource_filter_tools
+%else
+%{__python3} $SOURCE_DIR/depot_tools/autoninja.py -C %{chromebuilddir} subresource_filter_tools
+%endif
 
 # copy the filters over and generate the string of said filters
 for filter in %{_sourcedir}/filter-*.txt; do
