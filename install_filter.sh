@@ -49,7 +49,7 @@ NEW_DIR="$OLD_DIR/Subresource Filter/Unindexed Rules/$FILTER_VER"
 declare -r NEW_DIR
 
 logecho 2 "Removing '$OLD_DIR/Subresource Filter'"
-rm -r "$OLD_DIR/Subresource Filter"
+rm -rf "$OLD_DIR/Subresource Filter"
 logecho 2 "Creating '$NEW_DIR'"
 mkdir -p "$NEW_DIR"
 logecho 2 "Adding filter list from '$INSTALL_DIR'"
